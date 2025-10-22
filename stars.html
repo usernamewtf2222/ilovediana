@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>💖</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;}
+  body{
+    background: radial-gradient(circle at 50% 30%, #2c0068 0%, #12002b 60%, #000010 100%);
+    display:flex; align-items:center; justify-content:center; flex-direction:column;
+    color:#fff; font-family:"Inter",system-ui; text-align:center;
+  }
+  canvas{position:fixed;inset:0;z-index:0;}
+
+  h1{
+    position:relative; z-index:2; 
+    font-size:clamp(30px,6vw,56px);
+    font-weight:900;
+    text-shadow:
+      0 0 20px #ff73c7,
+      0 0 60px #ff3e8c,
+      0 0 120px #ff93c9;
+    animation:glow 4s ease-in-out infinite;
+  }
+  @keyframes glow{
+    0%,100%{text-shadow:0 0 20px #ff73c7,0 0 60px #ff3e8c,0 0 120px #ff93c9;}
+    50%{text-shadow:0 0 30px #ffc3e1,0 0 80px #ff66b6,0 0 160px #ffc3e1;}
+  }
+
+  p{
+    position:relative; z-index:2;
+    font-size:1.2rem; max-width:600px; margin-top:12px;
+    opacity:.9;
+    animation:fadeIn 3s ease-out forwards;
+  }
+  @keyframes fadeIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:none;}}
+
+  .aura{
+    position:fixed; inset:0; pointer-events:none; background:
+    radial-gradient(circle at 20% 30%,rgba(255,0,100,.12),transparent 60%),
+    radial-gradient(circle at 80% 70%,rgba(120,0,255,.12),transparent 70%);
+    filter:blur(90px);
+    animation:auramove 18s ease-in-out infinite alternate;
+    z-index:1;
+  }
+  @keyframes auramove{
+    0%{transform:translate(0,0);}
+    100%{transform:translate(5%,-5%);}
+  }
+</style>
+</head>
+<body>
+<div class="aura"></div>
+<canvas id="sky"></canvas>
+
+<h1>ты моя самая любимая девочка в мире 💖</h1>
+<p>я безумно рада что ты есть у меня, котик, спасибо тебе за все что ты делаешь для меня
+</p>
+
+<script>
+const c = document.getElementById('sky');
+const ctx = c.getContext('2d');
+let w, h;
+function resize(){ w = innerWidth; h = innerHeight; c.width = w; c.height = h; }
+resize(); addEventListener('resize', resize);
+
+const stars = [];
+for(let i=0;i<260;i++){
+  stars.push({
+    x: Math.random()*w,
+    y: Math.random()*h,
+    r: Math.random()*1.3 + 0.2,
+    spd: Math.random()*0.3 + 0.1,
+    tw: Math.random()*2*Math.PI
+  });
+}
+
+const meteors = [];
+function addMeteor(){
+  const y = Math.random()*h*0.6;
+  meteors.push({x:-50, y, dx:6+Math.random()*3, dy:2+Math.random()*1.5, len:200+Math.random()*100});
+}
+setInterval(()=>{ if(Math.random() < 0.5) addMeteor(); }, 2500);
+
+const hearts = [];
+const HEART_COUNT = 28;
+const HEART_MIN = 12, HEART_MAX = 24;
+
+function spawnHeart(){
+  const size = HEART_MIN + Math.random()*(HEART_MAX-HEART_MIN);
+  hearts.push({
+    x: Math.random()*w,
+    y: Math.random()*h*0.9,
+    size,
+    life: 0,
+    maxLife: 160 + Math.random()*120,
+    hue: 330 + Math.random()*30,
+    driftX: (Math.random()*2 - 1) * 0.3,
+    driftY: (Math.random()*2 - 1) * 0.2
+  });
+}
+for (let i=0;i<HEART_COUNT;i++) spawnHeart();
+
+function drawHeartPath(x, y, s){
+  const k = s/32;
+  ctx.beginPath();
+  ctx.moveTo(x, y - 6*k);
+  ctx.bezierCurveTo(x - 16*k, y - 28*k, x - 40*k, y + 4*k, x, y + 20*k);
+  ctx.bezierCurveTo(x + 40*k, y + 4*k, x + 16*k, y - 28*k, x, y - 6*k);
+  ctx.closePath();
+}
+
+function draw(){
+  ctx.clearRect(0,0,w,h);
+
+  for(const s of stars){
+    s.y += s.spd; if(s.y > h) s.y = 0;
+    s.tw += 0.02;
+    const alpha = 0.3 + 0.4 * (0.5 + 0.5*Math.sin(s.tw));
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = "#fff";
+    ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill();
+  }
+
+  for(let i=meteors.length-1; i>=0; i--){
+    const m = meteors[i];
+    m.x += m.dx; m.y += m.dy;
+    const grad = ctx.createLinearGradient(m.x, m.y, m.x - m.len, m.y - m.len*0.3);
+    grad.addColorStop(0, "rgba(255,255,255,0.9)");
+    grad.addColorStop(1, "rgba(255,120,200,0)");
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = grad; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(m.x - m.len, m.y - m.len*0.3); ctx.stroke();
+    if (m.x > w + 200 || m.y > h + 200) meteors.splice(i,1);
+  }
+
+  for (let i=hearts.length-1; i>=0; i--){
+    const hr = hearts[i];
+    hr.life++;
+    hr.x += hr.driftX;
+    hr.y += hr.driftY;
+
+    const t = hr.life / hr.maxLife;
+    const alpha = t < 0.2 ? (t/0.2) : (t > 0.8 ? (1 - (t-0.8)/0.2) : 1);
+
+    ctx.globalAlpha = 0.6 * alpha;
+    const color = `hsl(${hr.hue}deg 100% 70%)`;
+    ctx.fillStyle = color;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 12;
+
+    drawHeartPath(hr.x, hr.y, hr.size);
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+
+    if (hr.life >= hr.maxLife) {
+      hearts.splice(i,1);
+      spawnHeart();
+    }
+  }
+
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>

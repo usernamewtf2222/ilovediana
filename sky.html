@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Моё небо для тебя 🌌</title>
+<style>
+  :root{
+    --ink:#fff; --accent:#ff9fc2; --bg:#030014;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:radial-gradient(circle at 50% 40%,#2a003f 0%,#050014 70%,#000010 100%);
+    overflow:hidden; color:var(--ink); font-family:"Inter",system-ui;
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+  }
+  canvas{position:fixed;inset:0;z-index:0;}
+  h1{
+    position:relative; z-index:2; font-weight:800; text-align:center;
+    font-size:clamp(20px,4vw,36px); color:#ffe8f2; text-shadow:0 0 12px #ff69b4;
+    animation:fadeIn 2s ease forwards;
+  }
+  @keyframes fadeIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:none;}}
+  .star{
+    position:absolute; border-radius:50%; background:radial-gradient(circle,#fff 0 30%,transparent 70%);
+    width:6px; height:6px; opacity:.7; pointer-events:auto; cursor:pointer;
+    animation:twinkle 3s ease-in-out infinite;
+  }
+  @keyframes twinkle{
+    0%,100%{opacity:.4;transform:scale(.9);}
+    50%{opacity:1;transform:scale(1.4);}
+  }
+  .photo{
+    position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(.8);
+    max-width:min(500px,90vw); border-radius:20px; border:5px solid #fff;
+    box-shadow:0 0 40px rgba(255,100,180,.4);
+    opacity:0; pointer-events:none; z-index:10;
+  }
+  .photo.show{
+    animation:show 1s ease-out forwards;
+  }
+  @keyframes show{
+    to{opacity:1;transform:translate(-50%,-50%) scale(1);}
+  }
+  .btn{
+    position:fixed; bottom:10%; left:50%; transform:translateX(-50%);
+    background:linear-gradient(135deg,#ff6fa6,#ff9fc2);
+    color:white; padding:14px 22px; border-radius:14px; font-weight:700;
+    border:none; cursor:pointer; box-shadow:0 0 20px rgba(255,80,140,.3);
+    opacity:0; pointer-events:none; z-index:20; transition:opacity .5s;
+  }
+  .btn.show{opacity:1;pointer-events:auto;}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<h1>найди особую звездочку ⭐</h1>
+<img id="photo" class="photo" src="star.JPG" alt="Наше фото">
+<button id="next" class="btn">дальше 💫</button>
+<script>
+const c = document.getElementById('stars'), ctx = c.getContext('2d');
+let w,h; function resize(){w=innerWidth;h=innerHeight;c.width=w;c.height=h;}
+resize(); addEventListener('resize',resize);
+
+const stars=[]; for(let i=0;i<160;i++){
+  stars.push({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.4+0.4,spd:Math.random()*0.4+0.1});
+}
+function draw(){
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle='#fff';
+  for(const s of stars){
+    s.y+=s.spd; if(s.y>h) s.y=0;
+    ctx.globalAlpha=Math.random()*0.7+0.3;
+    ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill();
+  }
+  requestAnimationFrame(draw);
+}
+draw();
+
+// создаём одну «особую» звезду
+const special=document.createElement('div');
+special.className='star';
+special.style.left='50%';
+special.style.top='40%';
+special.style.width='12px';
+special.style.height='12px';
+special.style.background='radial-gradient(circle,#ffb6d9 0 30%,transparent 70%)';
+special.style.animationDuration='1.2s';
+document.body.appendChild(special);
+
+const photo=document.getElementById('photo');
+const next=document.getElementById('next');
+let opened=false;
+special.addEventListener('click',()=>{
+  if(opened) return;
+  opened=true;
+  photo.classList.add('show');
+  setTimeout(()=>{ next.classList.add('show'); },1200);
+});
+next.addEventListener('click',()=>location.href='stars.html');
+</script>
+</body>
+</html>

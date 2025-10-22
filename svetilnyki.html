@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title></title>
+<style>
+/* База */
+*,
+*::before,
+*::after { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  position: relative;
+  min-height: 100vh;
+  margin: 0;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  /* плавный фон — розовый центр и тёмные края */
+  background: radial-gradient(circle at 50% 30%, var(--center1, #ffb6c1) 0%, var(--center2, #ff69b4) 20%, #000 80%);
+  animation: pinkPulse 12s linear infinite alternate;
+}
+
+/* плавное изменение центральных оттенков */
+@keyframes pinkPulse {
+  0% {
+    --center1: #ffcee2; /* светло-розовый */
+    --center2: #fcb6d4; /* нежный розовый */
+  }
+  25% {
+    --center1: #ffbcd2; 
+    --center2: #f78db9;
+  }
+  50% {
+    --center1: #ffb6c1; /* стандартный розовый */
+    --center2: #ff69b4; /* яркий розовый */
+  }
+  75% {
+    --center1: #ff9db6; 
+    --center2: #ff7fa9;
+  }
+  100% {
+    --center1: #ffc0cb; /* тёплый розовый */
+    --center2: #ff85a2; /* мягкий малиновый */
+  }
+}
+
+
+
+/* Сетка 5×3 на всю высоту экрана, равномерные отступы */
+.grid{
+  display: grid;
+  grid-template-columns: repeat(9, minmax(120px, 1fr)); /* 3 колонки */
+  grid-template-rows: repeat(5, auto);                 /* 5 рядов */
+  gap: 28px;                                           /* одинаковые отступы */
+  width: min(10000px, 94vw);                            /* удобная ширина */
+  height: 100svh;                                      /* на всю высоту экрана */
+  margin: 0 auto;
+  justify-items: center;       /* центр внутри колонок */
+  align-content: space-evenly; /* равномерное распределение рядов по высоте */
+  padding: 2px;
+ 
+}
+
+/* Центральная надпись (средняя ячейка третьего ряда) */
+.center-title{
+  display: grid;
+  place-items: center;
+  text-align: center;
+  font-weight: 800;
+  color: #ffffff;
+  font-size: clamp(12px, 2vw, 12px);
+  line-height: 1.2;
+  text-shadow: 0 1px 0 #ff0000, 0 2px 6px rgb(244, 4, 4);
+}
+
+/* Тумблеры — твой стиль, только чуть уменьшены и без изменений логики */
+input[id^="switch-"]{
+  visibility: hidden;
+  clip: rect(0 0 0 0);
+  position: absolute;
+  left: 9999px;
+}
+.switch{
+  display:block;
+  width: 80px;   /* ширина тумблера */
+  height: 40px;  /* высота тумблера */
+  position: relative;
+  background: linear-gradient(to right,#ced8da 0%,#d8e0e3 29%,#ccd4d7 34%,#d4dcdf 62%,#fff9f4 68%,#e1e9ec 74%,#b7bfc2 100%);
+  transition: all .2s ease-out;
+  cursor: pointer;
+  border-radius: .35em;
+  box-shadow:
+    0 0 1px 2px rgba(0,0,0,.7),
+    inset 0 2px 0 rgba(255,255,255,.6),
+    inset 0 -1px 0 1px rgba(0,0,0,.3),
+    0 8px 10px rgba(0,0,0,.15);
+}
+.switch::before{
+  content:"";
+  position:absolute;
+  left:-24px; right:-24px;  /* уменьшил “корпус” вокруг, чтобы ряды не наезжали */
+  top:-18px;  bottom:-18px;
+  z-index:-2;
+  border-radius:.4em;
+  background: linear-gradient(#d7dfe2,#bcc7cd);
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,.6),
+    inset 0 -1px 1px 1px rgba(0,0,0,.3),
+    0 0 8px 2px rgba(0,0,0,.2),
+    0 2px 4px 2px rgba(0,0,0,.1);
+  pointer-events:none;
+  transition:all .2s ease-out;
+}
+.switch::after{
+  content:"";
+  position:absolute;
+  right:-18px;
+  top:50%;
+  width:14px; height:14px;
+  border-radius:50%;
+  background:#daacff;
+  margin-top:-7px;
+  z-index:-1;
+  box-shadow:
+    inset 0 -1px 8px rgba(0,0,0,.7),
+    inset 0 -2px 2px rgba(0,0,0,.2),
+    0 1px 0 #fff,
+    0 -1px 0 rgba(0,0,0,.5),
+    -38px 28px 14px 11px rgba(0,0,0,.25);
+     animation: var(--dot-animation, none);
+}
+/* checked */
+input:checked + .switch{
+  background: linear-gradient(to right,#b7bfc2 0%,#e1e9ec 26%,#fff9f4 32%,#d4dcdf 38%,#ccd4d7 66%,#d8e0e3 71%,#ced8da 100%);
+}
+input:checked + .switch::after{
+  background:#ff0000;
+  box-shadow:
+    inset 0 -1px 8px rgba(0,0,0,.7),
+    inset 0 -2px 2px rgba(0,0,0,.2),
+    0 1px 0 #fff,
+    0 -1px 0 rgba(0,0,0,.5),
+    -90px 28px 14px 11px rgba(0,0,0,.25);
+}
+
+@keyframes colorBlink {
+  0%   { background: #ff0000; }  /* красный */
+  25%  { background: #ffff00; }  /* жёлтый */
+  50%  { background: #00ff00; }  /* зелёный */
+  75%  { background: #00ffff; }  /* голубой */
+  100% { background: #ff00ff; }  /* розовый */
+}
+#switch-4 + .switch::after,
+#switch-6 + .switch::after,
+#switch-12 + .switch::after,
+#switch-14 + .switch::after,
+#switch-16 + .switch::after,
+#switch-21 + .switch::after,
+#switch-24 + .switch::after,
+#switch-30 + .switch::after,
+#switch-32 + .switch::after,
+#switch-40 + .switch::after {
+  content: "❤";
+  font-size: 14px;
+  color: #ff00008e;
+  background: none;
+  width: 16px;
+  height: 16px;
+  text-align: center;
+  line-height: 16px;
+  box-shadow: none;
+}
+
+#switch-4:checked + .switch::after,
+#switch-6:checked + .switch::after,
+#switch-12:checked + .switch::after,
+#switch-14:checked + .switch::after,
+#switch-16:checked + .switch::after,
+#switch-21:checked + .switch::after,
+#switch-24:checked + .switch::after,
+#switch-30:checked + .switch::after,
+#switch-32:checked + .switch::after,
+#switch-40:checked + .switch::after {
+  color: #ff0000;
+  text-shadow: 
+    0 0 5px #ff0000,
+    0 0 10px #ff3333,
+    0 0 20px #ff6666,
+    0 0 30px #ff9999;
+  transition: all 0.4s ease;
+  animation: redGlow 2.5s ease-in-out infinite alternate;
+}
+
+@keyframes redGlow {
+  0% {
+    text-shadow: 
+      0 0 5px #ff0000,
+      0 0 10px #ff3333,
+      0 0 20px #ff6666,
+      0 0 30px #ff9999;
+  }
+  100% {
+    text-shadow: 
+      0 0 10px #ff3333,
+      0 0 20px #ff6666,
+      0 0 40px #ff9999,
+      0 0 60px #ffffff;
+  }
+}
+
+</style>
+</head>
+<body>
+<script>
+  
+document.addEventListener('DOMContentLoaded', () => {
+  // тумблеры, которые должны быть включены
+  const mustBeOn = [4, 6, 12, 14, 16, 21, 24, 30, 32, 40];
+  const targetId = 13; // тумблер, который будет мигать и вести на другую страницу
+  const targetSwitch = document.getElementById(`switch-${targetId}`);
+  const targetLabel  = document.querySelector(`#switch-${targetId} + .switch`);
+  const allSwitches  = document.querySelectorAll('input[id^="switch-"]');
+
+  if (!targetLabel || !targetSwitch) return;
+
+  // функция проверки, включены ли нужные
+  function checkCombination() {
+    return mustBeOn.every(n => document.getElementById(`switch-${n}`)?.checked);
+  }
+
+  // обновление состояния подсказки
+  function updateHint() {
+    if (checkCombination()) {
+      targetLabel.style.setProperty('--dot-animation', 'colorBlink 1.5s infinite');
+    } else {
+      targetLabel.style.removeProperty('--dot-animation');
+    }
+  }
+
+  // проверяем каждый раз при клике на любой тумблер
+  allSwitches.forEach(sw => sw.addEventListener('change', updateHint));
+  updateHint();
+
+  // если нажали мигающий тумблер, и комбинация активна — перейти на другую страницу
+  targetSwitch.addEventListener('change', () => {
+    if (checkCombination()) {
+      // задержка 0.3с, чтобы была видна реакция на клик
+      setTimeout(() => {
+        window.location.href = "hz.html"; // ← сюда впиши нужный адрес
+      }, 300);
+    }
+  });
+});
+
+
+</script>
+
+
+<div class="grid">
+  <!-- Ряд 1 -->
+  <div><input type="checkbox" id="switch-1"><label class="switch" for="switch-1"></label></div>
+  <div><input type="checkbox" id="switch-2"><label class="switch" for="switch-2"></label></div>
+  <div><input type="checkbox" id="switch-3"><label class="switch" for="switch-3"></label></div>
+  <div><input type="checkbox" id="switch-4"><label class="switch" for="switch-4"></label></div>
+  <div><input type="checkbox" id="switch-5"><label class="switch" for="switch-5"></label></div>
+  <div><input type="checkbox" id="switch-6"><label class="switch" for="switch-6"></label></div>
+  <div><input type="checkbox" id="switch-7"><label class="switch" for="switch-7"></label></div>
+  <div><input type="checkbox" id="switch-8"><label class="switch" for="switch-8"></label></div>
+  <div><input type="checkbox" id="switch-9"><label class="switch" for="switch-9"></label></div>
+
+  <!-- Ряд 2 -->
+  <div><input type="checkbox" id="switch-10"><label class="switch" for="switch-10"></label></div>
+  <div><input type="checkbox" id="switch-11"><label class="switch" for="switch-11"></label></div>
+  <div><input type="checkbox" id="switch-12"><label class="switch" for="switch-12"></label></div>
+  <div><input type="checkbox" id="switch-13"><label class="switch" for="switch-13"></label></div>
+  <div><input type="checkbox" id="switch-14"><label class="switch" for="switch-14"></label></div>
+  <div><input type="checkbox" id="switch-15"><label class="switch" for="switch-15"></label></div>
+  <div><input type="checkbox" id="switch-16"><label class="switch" for="switch-16"></label></div>
+  <div><input type="checkbox" id="switch-17"><label class="switch" for="switch-17"></label></div>
+  <div><input type="checkbox" id="switch-18"><label class="switch" for="switch-18"></label></div>
+
+  <!-- Ряд 3 (середина): - * - -->
+  <div><input type="checkbox" id="switch-19"><label class="switch" for="switch-19"></label></div>
+  <div><input type="checkbox" id="switch-20"><label class="switch" for="switch-20"></label></div>
+  <div><input type="checkbox" id="switch-21"><label class="switch" for="switch-21"></label></div>
+  <div><input type="checkbox" id="switch-22"><label class="switch" for="switch-22"></label></div>
+  <div class="center-title">я тебя очень сильно люблю, сделай чтобы сердце горело
+  </div>
+  <div><input type="checkbox" id="switch-23"><label class="switch" for="switch-23"></label></div>
+  <div><input type="checkbox" id="switch-24"><label class="switch" for="switch-24"></label></div>
+  <div><input type="checkbox" id="switch-25"><label class="switch" for="switch-25"></label></div>
+  <div><input type="checkbox" id="switch-26"><label class="switch" for="switch-26"></label></div>
+
+  <!-- Ряд 4 -->
+  <div><input type="checkbox" id="switch-27"><label class="switch" for="switch-27"></label></div>
+  <div><input type="checkbox" id="switch-28"><label class="switch" for="switch-28"></label></div>
+  <div><input type="checkbox" id="switch-29"><label class="switch" for="switch-29"></label></div>
+  <div><input type="checkbox" id="switch-30"><label class="switch" for="switch-30"></label></div>
+  <div><input type="checkbox" id="switch-31"><label class="switch" for="switch-31"></label></div>
+  <div><input type="checkbox" id="switch-32"><label class="switch" for="switch-32"></label></div>
+  <div><input type="checkbox" id="switch-33"><label class="switch" for="switch-33"></label></div>
+  <div><input type="checkbox" id="switch-34"><label class="switch" for="switch-34"></label></div>
+  <div><input type="checkbox" id="switch-35"><label class="switch" for="switch-35"></label></div>
+
+  <!-- Ряд 5 -->
+  <div><input type="checkbox" id="switch-36"><label class="switch" for="switch-36"></label></div>
+  <div><input type="checkbox" id="switch-37"><label class="switch" for="switch-37"></label></div>
+  <div><input type="checkbox" id="switch-38"><label class="switch" for="switch-38"></label></div>
+  <div><input type="checkbox" id="switch-39"><label class="switch" for="switch-39"></label></div>
+  <div><input type="checkbox" id="switch-40"><label class="switch" for="switch-40"></label></div>
+  <div><input type="checkbox" id="switch-41"><label class="switch" for="switch-41"></label></div>
+  <div><input type="checkbox" id="switch-42"><label class="switch" for="switch-42"></label></div>
+  <div><input type="checkbox" id="switch-43"><label class="switch" for="switch-43"></label></div>
+  <div><input type="checkbox" id="switch-44"><label class="switch" for="switch-44"></label></div>
+</div>
+
+</body>
+</html>
