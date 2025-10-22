@@ -113,6 +113,8 @@
     @keyframes animateRight { 0%{ transform: translateY(100%);} 100%{ transform: translateY(-100%);} }
     @keyframes animateBottom{ 0%{ transform: translateX(-100%);} 100%{ transform: translateX(100%);} }
     @keyframes animateLeft { 0%{ transform: translateY(-100%);} 100%{ transform: translateY(100%);} }
+    .touch-picked{ outline:2px solid var(--accent); outline-offset:-2px; }
+
   </style>
 </head>
 <body>
@@ -340,17 +342,28 @@ window.addEventListener('orientationchange', debounce(restyleAllPieces));
       });
     }
 
-    function addPieceDnD(piece){
-      piece.addEventListener('dragstart', e=>{
-        e.dataTransfer.setData('text/piece-id', ensurePieceId(piece));
-        setTimeout(()=> piece.style.opacity = '.75');
-      });
-      piece.addEventListener('dragend', ()=>{ piece.style.opacity = ''; });
-      piece.addEventListener('click', ()=>{
-        if (window.touchSelectedPiece) window.touchSelectedPiece.classList.remove('touch-picked');
-        window.touchSelectedPiece = piece;
-      });
+  function addPieceDnD(piece){
+  piece.addEventListener('dragstart', e=>{
+    e.dataTransfer.setData('text/piece-id', ensurePieceId(piece));
+    setTimeout(()=> piece.style.opacity = '.75');
+  });
+  piece.addEventListener('dragend', ()=>{ piece.style.opacity = ''; });
+
+  // ТАП-режим (мобилки): выбрать/снять выбор
+  piece.addEventListener('click', ()=>{
+    if (window.touchSelectedPiece === piece){
+      piece.classList.remove('touch-picked');
+      window.touchSelectedPiece = null;
+      return;
     }
+    if (window.touchSelectedPiece){
+      window.touchSelectedPiece.classList.remove('touch-picked');
+    }
+    window.touchSelectedPiece = piece;
+    piece.classList.add('touch-picked');
+  });
+}
+
 
     function ensurePieceId(piece){ if (!piece.id){ piece.id = 'p' + Math.random().toString(36).slice(2,9); } return piece.id; }
 
@@ -394,6 +407,23 @@ window.addEventListener('orientationchange', debounce(restyleAllPieces));
 
     function init(){ setCSSVars(); buildBoard(); imgURL = null; buildPieces(); }
     init();
+// Вернуть выбранный кусочек в лоток одним тапом
+tray.addEventListener('click', ()=>{
+  if (window.touchSelectedPiece){
+    movePieceToTray(window.touchSelectedPiece);
+    window.touchSelectedPiece.classList.remove('touch-picked');
+    window.touchSelectedPiece = null;
+    updatePiecesLeft();
+    hideUnlock();
+  }
+});
+
+// Хелпер: корректно отправить кусочек в лоток
+function movePieceToTray(piece){
+  tray.appendChild(piece);
+  piece.style.width = '';
+  piece.style.height = '';
+}
 
     tray.addEventListener('dragover', e=> e.preventDefault());
     tray.addEventListener('drop', e=>{
@@ -412,3 +442,4 @@ window.addEventListener('orientationchange', debounce(restyleAllPieces));
   </script>
 </body>
 </html>
+
