@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Puzzle Gate — Jigsaw</title>
+  <style>
+    :root{
+      --board-size: 520px;
+      --n: 5;
+      --gap: 0px;
+      --radius: 0px;
+      --bg: #0b1018;
+      --panel: #121a26;
+      --ink: #e6edf3;
+      --muted: #8aa0b6;
+      --accent: #62a2ff;
+      --good: #3ad29f;
+    }
+    html,body{height:100%;}
+    body{
+      margin:0; background: radial-gradient(1200px 600px at 10% -10%, #1c2a40 0, transparent 60%),
+                                 radial-gradient(1200px 600px at 110% 110%, #172234 0, transparent 60%),
+                                 var(--bg);
+      color:var(--ink); font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Inter, sans-serif;
+      display:flex; align-items:center; justify-content:center; padding:24px;
+    }
+    .app{ width:min(1100px, 100%); }
+    header{ display:flex; gap:12px; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    .title{ font-size:20px; font-weight:700; letter-spacing:0.3px; }
+
+    .layout{ display:grid; grid-template-columns: 1fr var(--board-size); gap:18px; align-items:start; }
+
+    .tray, .board{ background:var(--panel); border:1px solid #253449; padding:12px; border-radius:16px; position:relative; }
+    .tray-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; color:var(--muted); }
+
+    .tray-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap:8px; min-height:120px; }
+
+    .board{
+      width:var(--board-size); height:var(--board-size);
+      display:grid; grid-template-columns: repeat(var(--n), 1fr);
+      grid-template-rows: repeat(var(--n), 1fr);
+      gap:var(--gap);
+      position:relative; 
+      background:#0e1623;
+      overflow:hidden;
+    }
+
+    .cell{ position:relative; overflow:visible; }
+
+    .piece{
+      user-select:none; -webkit-user-drag: element; cursor:grab;
+      background-repeat:no-repeat; background-size: calc(var(--board-size) + 0.8px) calc(var(--board-size) + 0.8px);
+      width: calc((var(--board-size) - (var(--n) - 1) * var(--gap)) / var(--n));
+      height: calc((var(--board-size) - (var(--n) - 1) * var(--gap)) / var(--n));
+      outline: none; box-shadow: none; border:none; 
+      transition: transform .06s ease;
+      will-change: transform; transform: translateZ(0);
+      position:relative;
+      -webkit-mask-image: var(--mask);
+      mask-image: var(--mask);
+      -webkit-mask-size: 100% 100%;
+      mask-size: 100% 100%;
+      -webkit-mask-repeat: no-repeat; mask-repeat:no-repeat;
+    }
+    .piece:active{ cursor:grabbing; transform: scale(.985); }
+
+    .drop-target{ outline:2px dashed var(--accent); outline-offset: -6px; }
+
+    .pill{ padding:4px 8px; border-radius:999px; background:#0f1623; border:1px solid #243246; color:var(--muted); }
+
+    .unlock{ position:absolute; top:-14px; right:-14px; display:none; }
+    .unlock.show{ display:block; }
+    .next-btn{ display:inline-flex; align-items:center; gap:10px; padding:10px 14px; border-radius:12px; background:linear-gradient(180deg, #32d6a1, #1aa373); color:#001309; font-weight:700; text-decoration:none; box-shadow:0 6px 18px rgba(26,163,115,.35); }
+    .blink{ animation: blink 1s infinite ease-in-out; }
+    @keyframes blink{ 0%,100%{ opacity:1; transform: translateY(0) } 50%{ opacity:.45; transform: translateY(-1px) } }
+
+    .footer-hint{ color:#7891ac; font-size:12px; margin-top:8px; }
+
+    @media (max-width: 980px){
+      :root{ --board-size: 88vw; }
+      .layout{ grid-template-columns: 1fr; }
+      .tray-grid{ grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); }
+      .unlock{ top: -10px; right: -10px; }
+    }
+  
+    .animated-button1 {
+      position: relative;
+      background: linear-gradient(-30deg, #3d0b0b 50%, #2b0808 50%);
+      padding: 14px 22px;
+      display: inline-block;
+      overflow: hidden;
+      color: #f7d4d4;
+      font-size: 16px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-decoration: none;
+      box-shadow: 0 10px 24px rgba(0,0,0,.45);
+      border-radius: 12px;
+    }
+    .animated-button1::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-color: #ad8585; opacity: 0; transition: .2s opacity ease-in-out;
+    }
+    .animated-button1:hover::before { opacity: .2; }
+    .animated-button1 span { position: absolute; }
+    .animated-button1 span:nth-child(1){ top:0; left:0; width:100%; height:2px; background: linear-gradient(to left, rgba(43,8,8,0), #d92626); animation: 2s animateTop linear infinite; }
+    .animated-button1 span:nth-child(2){ top:0; right:0; width:2px; height:100%; background: linear-gradient(to top, rgba(43,8,8,0), #d92626); animation: 2s animateRight linear -1s infinite; }
+    .animated-button1 span:nth-child(3){ bottom:0; left:0; width:100%; height:2px; background: linear-gradient(to right, rgba(43,8,8,0), #d92626); animation: 2s animateBottom linear infinite; }
+    .animated-button1 span:nth-child(4){ top:0; left:0; width:2px; height:100%; background: linear-gradient(to bottom, rgba(43,8,8,0), #d92626); animation: 2s animateLeft linear -1s infinite; }
+    @keyframes animateTop { 0%{ transform: translateX(100%);} 100%{ transform: translateX(-100%);} }
+    @keyframes animateRight { 0%{ transform: translateY(100%);} 100%{ transform: translateY(-100%);} }
+    @keyframes animateBottom{ 0%{ transform: translateX(-100%);} 100%{ transform: translateX(100%);} }
+    @keyframes animateLeft { 0%{ transform: translateY(-100%);} 100%{ transform: translateY(100%);} }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="title">ты моя умничка, а теперь собери пазлы!!!</div>
+    </header>
+
+    <div class="layout">
+      <section class="tray" aria-label="Лоток с кусочками">
+        <div class="tray-header">
+          <div>лоток (свободные кусочки)</div>
+          <div class="pill" id="piecesLeft">—</div>
+        </div>
+        <div class="tray-grid" id="tray"></div>
+        <div class="footer-hint">на телефоне: тап по кусочку → тап по ячейке. На компьютере — перетаскивание.</div>
+      </section>
+
+      <section class="board" id="board" aria-label="Поле для пазла">
+        <div class="unlock" id="unlock">
+          <a href="straniza.html" class="animated-button1">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            оп теперь сюда
+          </a>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <template id="cellTpl">
+    <div class="cell" draggable="false"></div>
+  </template>
+  <template id="pieceTpl">
+    <div class="piece" draggable="true"></div>
+  </template>
+
+  <script>
+  (function(){
+    const board = document.getElementById('board');
+    const tray = document.getElementById('tray');
+    const piecesLeft = document.getElementById('piecesLeft');
+    const unlock = document.getElementById('unlock');
+
+    const N = 5;
+    let imgURL = null;
+
+    const DEMO = 'kotik.jpg';
+
+    const horiz = Array.from({length:N}, (_,r)=> Array.from({length:N-1}, (_,c)=> r===0||r===N-1? ((c%2===0)?1:-1) : ((Math.random()>0.5)?1:-1)));
+    const vert  = Array.from({length:N-1}, (_,r)=> Array.from({length:N},   (_,c)=> c===0||c===N-1? ((r%2===0)?-1:1) : ((Math.random()>0.5)?1:-1)));
+
+    function shuffled(array){
+      const a = array.slice();
+      for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+      return a;
+    }
+
+    function setCSSVars(){ document.documentElement.style.setProperty('--n', N); }
+
+    function buildBoard(){
+      const keepUnlock = unlock; 
+      board.innerHTML = '';
+      const frag = document.createDocumentFragment();
+      const tpl = document.getElementById('cellTpl');
+      for(let i=0;i<N*N;i++){
+        const cell = tpl.content.firstElementChild.cloneNode(true);
+        cell.dataset.index = String(i);
+        addCellDnD(cell);
+        frag.appendChild(cell);
+      }
+      board.appendChild(frag);
+      board.appendChild(keepUnlock);
+    }
+
+    function buildPieces(){
+      tray.innerHTML = '';
+      const order = shuffled([...Array(N*N).keys()]);
+      const frag = document.createDocumentFragment();
+      const tpl = document.getElementById('pieceTpl');
+
+      const pieceSize = getPieceSize();
+
+      for(const idx of order){
+        const piece = tpl.content.firstElementChild.cloneNode(true);
+        piece.dataset.index = String(idx);
+        stylePieceBackground(piece, idx, pieceSize);
+        applyJigsawMask(piece, idx);
+        addPieceDnD(piece);
+        frag.appendChild(piece);
+      }
+      tray.appendChild(frag);
+      updatePiecesLeft();
+      hideUnlock();
+    }
+
+    // === исправленный расчёт размеров ===
+
+// Получаем реальную ширину доски в пикселях
+function getBoardPx() {
+  return board.getBoundingClientRect().width; // даёт точную ширину
+}
+
+function getPieceSize(){
+  const boardPx = getBoardPx();
+  const gap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--gap')) || 0;
+  return (boardPx - (N-1)*gap)/N;
+}
+
+// Используем реальную ширину вместо var(--board-size)
+function stylePieceBackground(el, idx, pieceSize){
+  const row = Math.floor(idx / N);
+  const col = idx % N;
+  const fudge = 0.4;
+  const boardPx = getBoardPx();
+
+  el.style.backgroundImage = `url("${imgURL || DEMO}")`;
+  el.style.backgroundPosition = `${-(col*pieceSize - fudge)}px ${-(row*pieceSize - fudge)}px`;
+  el.style.backgroundSize = `${boardPx + 2*fudge}px ${boardPx + 2*fudge}px`;
+}
+
+// При изменении размера экрана обновляем фон у всех кусочков
+function restyleAllPieces(){
+  const pieceSize = getPieceSize();
+  document.querySelectorAll('.piece').forEach(p=>{
+    stylePieceBackground(p, Number(p.dataset.index), pieceSize);
+  });
+}
+
+function debounce(fn, ms=120){
+  let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); };
+}
+
+// слушаем изменение ширины / ориентации
+window.addEventListener('resize', debounce(restyleAllPieces));
+window.addEventListener('orientationchange', debounce(restyleAllPieces));
+
+
+    function stylePieceBackground(el, idx, pieceSize){
+      const row = Math.floor(idx / N);
+      const col = idx % N;
+      const fudge = 0.4;
+      el.style.backgroundImage = `url("${imgURL || DEMO}")`;
+      el.style.backgroundPosition = `${-(col*pieceSize - fudge)}px ${-(row*pieceSize - fudge)}px`;
+      el.style.backgroundSize = `calc(var(--board-size) + ${fudge*2}px) calc(var(--board-size) + ${fudge*2}px)`;
+    }
+
+    function applyJigsawMask(el, idx){
+      const r = Math.floor(idx / N);
+      const c = idx % N;
+      const knob = 90;
+      const pad  = 40;
+      const S = 1000;
+
+      function edgePath(side){
+        const k = (side==='T' && r>0)    ? -vert[r-1][c]
+                : (side==='B' && r<N-1) ?  vert[r][c]
+                : (side==='L' && c>0)    ? -horiz[r][c-1]
+                : (side==='R' && c<N-1) ?  horiz[r][c]
+                : 0;
+        if (k===0){
+          if (side==='T') return `L ${S-pad} ${pad}`;
+          if (side==='R') return `L ${S-pad} ${S-pad}`;
+          if (side==='B') return `L ${pad} ${S-pad}`;
+          if (side==='L') return `L ${pad} ${pad}`;
+        }
+        const mid = S/2;
+        const dir = k;
+        const amp = knob * dir;
+        if (side==='T'){
+          return `L ${mid - 2*knob} ${pad}
+                  C ${mid - 1.2*knob} ${pad} ${mid - 1.2*knob} ${pad - amp} ${mid} ${pad - amp}
+                  C ${mid + 1.2*knob} ${pad - amp} ${mid + 1.2*knob} ${pad} ${mid + 2*knob} ${pad}
+                  L ${S-pad} ${pad}`;
+        }
+        if (side==='R'){
+          return `L ${S-pad} ${mid - 2*knob}
+                  C ${S-pad} ${mid - 1.2*knob} ${S+amp} ${mid - 1.2*knob} ${S+amp} ${mid}
+                  C ${S+amp} ${mid + 1.2*knob} ${S-pad} ${mid + 1.2*knob} ${S-pad} ${mid + 2*knob}
+                  L ${S-pad} ${S-pad}`;
+        }
+        if (side==='B'){
+          return `L ${mid + 2*knob} ${S-pad}
+                  C ${mid + 1.2*knob} ${S-pad} ${mid + 1.2*knob} ${S+amp} ${mid} ${S+amp}
+                  C ${mid - 1.2*knob} ${S+amp} ${mid - 1.2*knob} ${S-pad} ${mid - 2*knob} ${S-pad}
+                  L ${pad} ${S-pad}`;
+        }
+        if (side==='L'){
+          return `L ${pad} ${mid + 2*knob}
+                  C ${pad} ${mid + 1.2*knob} ${-amp} ${mid + 1.2*knob} ${-amp} ${mid}
+                  C ${-amp} ${mid - 1.2*knob} ${pad} ${mid - 1.2*knob} ${pad} ${mid - 2*knob}
+                  L ${pad} ${pad}`;
+        }
+      }
+
+      const d = [
+        `M ${pad} ${pad}`,
+        edgePath('T'),
+        edgePath('R'),
+        edgePath('B'),
+        edgePath('L'),
+        'Z'
+      ].join(' ');
+
+      const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1000' height='1000' viewBox='0 0 1000 1000'>
+        <path d='${d}' fill='black'/>
+      </svg>`;
+      const url = `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
+      el.style.setProperty('--mask', url);
+    }
+
+    function addCellDnD(cell){
+      cell.addEventListener('dragenter', e=>{ e.preventDefault(); cell.classList.add('drop-target'); });
+      cell.addEventListener('dragover',  e=>{ e.preventDefault(); });
+      cell.addEventListener('dragleave', e=>{ cell.classList.remove('drop-target'); });
+      cell.addEventListener('drop', onDropInto.bind(null, cell));
+      cell.addEventListener('click', ()=>{
+        if (window.touchSelectedPiece){
+          placePieceIntoCell(window.touchSelectedPiece, cell);
+          window.touchSelectedPiece.classList.remove('touch-picked');
+          window.touchSelectedPiece = null;
+        }
+      });
+    }
+
+    function addPieceDnD(piece){
+      piece.addEventListener('dragstart', e=>{
+        e.dataTransfer.setData('text/piece-id', ensurePieceId(piece));
+        setTimeout(()=> piece.style.opacity = '.75');
+      });
+      piece.addEventListener('dragend', ()=>{ piece.style.opacity = ''; });
+      piece.addEventListener('click', ()=>{
+        if (window.touchSelectedPiece) window.touchSelectedPiece.classList.remove('touch-picked');
+        window.touchSelectedPiece = piece;
+      });
+    }
+
+    function ensurePieceId(piece){ if (!piece.id){ piece.id = 'p' + Math.random().toString(36).slice(2,9); } return piece.id; }
+
+    function onDropInto(cell, e){
+      e.preventDefault(); cell.classList.remove('drop-target');
+      const pid = e.dataTransfer.getData('text/piece-id');
+      const piece = document.getElementById(pid);
+      if (!piece) return;
+      placePieceIntoCell(piece, cell);
+    }
+
+    function placePieceIntoCell(piece, cell){
+      const existing = cell.querySelector('.piece');
+      const fromContainer = piece.parentElement;
+      if (existing){ fromContainer.appendChild(existing); }
+      cell.appendChild(piece);
+      piece.style.width = '100%'; piece.style.height = '100%';
+      updatePiecesLeft();
+      checkWin();
+    }
+
+    function updatePiecesLeft(){
+      const left = tray.querySelectorAll('.piece').length;
+      piecesLeft.textContent = left === 0 ? 'Все на поле' : `В лотке: ${left}`;
+    }
+
+    function checkWin(){
+      const cells = [...board.querySelectorAll('.cell')];
+      for (const cell of cells){
+        const p = cell.querySelector('.piece');
+        if (!p) return hideUnlock();
+        if (p.dataset.index !== cell.dataset.index) return hideUnlock();
+      }
+      showUnlock();
+    }
+
+    function showUnlock(){ unlock.classList.add('show'); }
+    function hideUnlock(){ unlock.classList.remove('show'); }
+
+    function rebuild(){ setCSSVars(); buildBoard(); buildPieces(); hideUnlock(); }
+
+    function init(){ setCSSVars(); buildBoard(); imgURL = null; buildPieces(); }
+    init();
+
+    tray.addEventListener('dragover', e=> e.preventDefault());
+    tray.addEventListener('drop', e=>{
+      e.preventDefault();
+      const pid = e.dataTransfer.getData('text/piece-id');
+      const piece = document.getElementById(pid);
+      if (!piece) return;
+      tray.appendChild(piece);
+      piece.style.width = '';
+      piece.style.height = '';
+      updatePiecesLeft();
+      hideUnlock();
+    });
+
+  })();
+  </script>
+</body>
+</html>
